@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>打工薪金計 · 實時追蹤</title>
+    <style>
+        :root {
+            --bg: #0f0f1a;
+            --card-bg: #1a1a2e;
+            --gold: #f0c060;
+            --gold-light: #ffe0a0;
+            --accent-green: #4ade80;
+            --accent-blue: #60a5fa;
+            --accent-red: #f87171;
+            --accent-orange: #fb923c;
+            --text: #e2e2e8;
+            --text-secondary: #a0a0b8;
+            --text-muted: #6b6b80;
+            --border: #2a2a40;
+            --radius: 18px;
+            --radius-sm: 12px;
+            --radius-xs: 8px;
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Menlo', monospace;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang HK', 'Noto Sans HK', 'Helvetica Neue', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 12px;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .onboarding-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: opacity 0.35s ease, visibility 0.35s;
+        }
+        .onboarding-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .onboarding-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 28px 22px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+            animation: slideUp 0.4s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(30px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+        .onboarding-card h2 { font-size:1.8rem; margin-bottom:6px; color:#fff; display:flex; align-items:center; gap:8px; }
+        .onboarding-card .onboard-sub { font-size:0.85rem; color:var(--text-muted); margin-bottom:20px; }
+        .form-group { margin-bottom:14px; }
+        .form-group label { display:block; font-size:0.75rem; color:var(--text-secondary); margin-bottom:4px; }
+        .form-group input, .form-group select {
+            width:100%; padding:12px 14px; border-radius:var(--radius-xs); border:1px solid var(--border);
+            background:#12121f; color:#fff; font-size:0.95rem; font-family:inherit;
+        }
+        .form-row { display:flex; gap:10px; }
+        .form-row .form-group { flex:1; }
+        .btn-onboard {
+            width:100%; padding:14px; border-radius:14px; background:linear-gradient(135deg,#f0c060,#d4892a);
+            color:#1a1a1a; font-weight:700; font-size:1rem; border:none; cursor:pointer; margin-top:8px;
+        }
+        .btn-onboard:active { transform:scale(0.96); opacity:0.85; }
+        .onboarding-card .onboard-note { font-size:0.65rem; color:var(--text-muted); text-align:center; margin-top:14px; }
+
+        .app-container { width:100%; max-width:440px; display:flex; flex-direction:column; gap:14px; padding-bottom:80px; }
+        .header { display:flex; align-items:center; justify-content:space-between; padding:6px 4px 2px; }
+        .header-left { display:flex; align-items:center; gap:10px; }
+        .app-icon {
+            width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg,#f0c060,#e8963a);
+            display:flex; align-items:center; justify-content:center; font-size:22px;
+            box-shadow:0 4px 16px rgba(240,192,96,0.3);
+        }
+        .app-title { font-size:1.25rem; font-weight:700; color:#fff; }
+        .app-subtitle { font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; }
+        .icon-btn {
+            width:38px; height:38px; border-radius:50%; border:1px solid var(--border); background:var(--card-bg);
+            color:var(--text); font-size:17px; cursor:pointer; display:flex; align-items:center;
+            justify-content:center; transition:var(--transition);
+        }
+        .icon-btn:active { background:#2a2a44; transform:scale(0.94); }
+
+        .status-bar {
+            display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:var(--radius-sm);
+            background:var(--card-bg); border:1px solid var(--border); font-size:0.85rem;
+        }
+        .status-dot {
+            width:10px; height:10px; border-radius:50%; flex-shrink:0;
+            animation:pulse-dot 2s ease-in-out infinite;
+        }
+        .status-dot.working { background:var(--accent-green); box-shadow:0 0 12px rgba(74,222,128,0.6); }
+        .status-dot.lunch { background:var(--accent-orange); box-shadow:0 0 12px rgba(251,146,60,0.6); }
+        .status-dot.off { background:var(--accent-red); box-shadow:0 0 12px rgba(248,113,113,0.5); animation:pulse-dot-fast 0.8s infinite; }
+        .status-dot.holiday { background:var(--accent-blue); box-shadow:0 0 12px rgba(96,165,250,0.5); }
+        .status-dot.idle { background:#6b6b80; }
+        @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes pulse-dot-fast { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.6)} }
+        .status-text { flex:1; font-size:0.82rem; }
+        .status-time { font-family:var(--font-mono); font-size:1.1rem; font-weight:700; color:#fff; }
+
+        .live-clock { text-align:center; padding:4px 0; }
+        .live-clock .time-main { font-family:var(--font-mono); font-size:2.6rem; font-weight:800; color:#fff; }
+        .live-clock .time-sec { font-family:var(--font-mono); font-size:1rem; color:var(--text-muted); }
+        .live-clock .date-str { font-size:0.78rem; color:var(--text-secondary); margin-top:2px; }
+
+        .salary-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+        .salary-card {
+            background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius);
+            padding:14px 10px; text-align:center; transition:var(--transition);
+        }
+        .salary-card.today { border-color:rgba(74,222,128,0.35); background:linear-gradient(180deg,rgba(74,222,128,0.06) 0%,var(--card-bg) 60%); }
+        .salary-card.week { border-color:rgba(240,192,96,0.35); background:linear-gradient(180deg,rgba(240,192,96,0.06) 0%,var(--card-bg) 60%); }
+        .salary-card.month { border-color:rgba(96,165,250,0.35); background:linear-gradient(180deg,rgba(96,165,250,0.06) 0%,var(--card-bg) 60%); }
+        .salary-card .card-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-muted); margin-bottom:4px; }
+        .salary-card .card-amount { font-family:var(--font-mono); font-size:1rem; font-weight:700; color:#fff; line-height:1.3; }
+        .salary-card.today .card-amount .current { color:var(--accent-green); }
+        .salary-card.week .card-amount .current { color:var(--gold-light); }
+        .salary-card.month .card-amount .current { color:var(--accent-blue); }
+        .salary-card .card-amount .target { color:var(--text-muted); font-size:0.65em; font-weight:500; }
+        .salary-card .card-amount .separator { color:var(--text-muted); margin:0 2px; font-size:0.8em; }
+        .salary-card .card-sub { font-size:0.6rem; color:var(--text-muted); margin-top:4px; }
+        .salary-card .progress-mini { margin-top:8px; height:3px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden; }
+        .salary-card .progress-mini-fill { height:100%; border-radius:3px; transition:width 1s ease; }
+        .salary-card.today .progress-mini-fill { background:var(--accent-green); }
+        .salary-card.week .progress-mini-fill { background:var(--gold); }
+        .salary-card.month .progress-mini-fill { background:var(--accent-blue); }
+
+        .info-row { display:flex; gap:8px; flex-wrap:wrap; }
+        .info-chip {
+            background:var(--card-bg); border:1px solid var(--border); border-radius:20px;
+            padding:8px 14px; font-size:0.72rem; color:var(--text-secondary);
+            display:flex; align-items:center; gap:6px; white-space:nowrap;
+        }
+        .info-chip .chip-val { font-weight:600; color:#fff; font-family:var(--font-mono); }
+
+        .section-title { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); padding:0 4px; margin-top:2px; }
+        .countdown-card {
+            background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius);
+            padding:16px; display:flex; align-items:center; gap:14px; transition:var(--transition);
+        }
+        .countdown-card.urgent { border-color:rgba(248,113,113,0.5); animation:border-glow 2s ease-in-out infinite; }
+        @keyframes border-glow { 0%,100%{border-color:rgba(248,113,113,0.35)} 50%{border-color:rgba(248,113,113,0.8)} }
+        .countdown-icon { font-size:2rem; }
+        .countdown-info { flex:1; }
+        .countdown-info .cd-label { font-size:0.68rem; color:var(--text-muted); }
+        .countdown-info .cd-days { font-size:1.8rem; font-weight:800; font-family:var(--font-mono); color:#fff; }
+        .countdown-info .cd-days small { font-size:0.8rem; font-weight:400; color:var(--text-secondary); }
+        .countdown-info .cd-detail { font-size:0.72rem; color:var(--text-secondary); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+        .alert-banner {
+            background:linear-gradient(135deg,#3b1a1a,#2a1010); border:1.5px solid rgba(248,113,113,0.5);
+            border-radius:var(--radius-sm); padding:14px 16px; display:flex; align-items:center; gap:10px;
+        }
+        .alert-banner .alert-text { flex:1; font-weight:600; font-size:0.9rem; color:#fca5a5; }
+        .alert-banner .alert-close { background:none; border:none; color:#fca5a5; font-size:1.2rem; cursor:pointer; }
+
+        .settings-overlay {
+            position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; display:flex;
+            align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.3s;
+        }
+        .settings-overlay.open { opacity:1; pointer-events:auto; }
+        .settings-panel {
+            background:#1a1a2e; border-radius:22px 22px 0 0; width:100%; max-width:440px;
+            max-height:85vh; overflow-y:auto; padding:20px 20px 30px;
+            transform:translateY(100%); transition:transform 0.35s ease;
+        }
+        .settings-overlay.open .settings-panel { transform:translateY(0); }
+        .settings-handle { width:40px; height:4px; border-radius:2px; background:#444; margin:0 auto 18px; }
+        .settings-panel h3 { font-size:1.1rem; margin-bottom:16px; color:#fff; }
+        .btn-save {
+            width:100%; padding:13px; border-radius:var(--radius-sm); background:linear-gradient(135deg,#f0c060,#d4892a);
+            color:#1a1a1a; font-weight:700; font-size:1rem; border:none; cursor:pointer; margin-top:8px;
+        }
+        .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; }
+        .toggle-row span { font-size:0.85rem; }
+        .toggle-switch {
+            width:48px; height:28px; border-radius:14px; background:#3a3a50; cursor:pointer; position:relative; transition:0.2s;
+        }
+        .toggle-switch.on { background:var(--accent-green); }
+        .toggle-switch::after {
+            content:''; position:absolute; top:3px; left:3px; width:22px; height:22px;
+            border-radius:50%; background:#fff; transition:0.2s;
+        }
+        .toggle-switch.on::after { left:23px; }
+
+        .toast {
+            position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-120px);
+            background:#2a2a44; color:#fff; padding:12px 22px; border-radius:25px;
+            font-size:0.85rem; font-weight:600; z-index:200; pointer-events:none;
+            transition:transform 0.35s ease; box-shadow:0 8px 30px rgba(0,0,0,0.5);
+        }
+        .toast.show { transform:translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+    <!-- 首次使用引導 -->
+    <div class="onboarding-overlay hidden" id="onboardingOverlay">
+        <div class="onboarding-card">
+            <h2>💰 歡迎使用<br>打工薪金計</h2>
+            <div class="onboard-sub">設定您的基本資料，開始追蹤薪金</div>
+            <div class="form-group">
+                <label>月薪 (HKD)</label>
+                <input type="number" id="onboardSalary" placeholder="20000" min="1000" max="999999" step="100" value="20000">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>上班時間</label>
+                    <input type="time" id="onboardWorkStart" value="09:00">
+                </div>
+                <div class="form-group">
+                    <label>下班時間</label>
+                    <input type="time" id="onboardWorkEnd" value="18:00">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>午休開始</label>
+                    <input type="time" id="onboardLunchStart" value="12:00">
+                </div>
+                <div class="form-group">
+                    <label>午休結束</label>
+                    <input type="time" id="onboardLunchEnd" value="13:00">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>每週工作天數</label>
+                <select id="onboardWorkDaysPerWeek">
+                    <option value="5" selected>5天 (週一至週五)</option>
+                    <option value="6">6天 (週一至週六)</option>
+                    <option value="5.5">5.5天 (週一至週五 + 週六半天)</option>
+                </select>
+            </div>
+            <button class="btn-onboard" id="btnOnboardSave">🚀 開始使用</button>
+            <div class="onboard-note">資料自動備份至Cookie，不易丟失</div>
+        </div>
+    </div>
+
+    <!-- 主程式 -->
+    <div class="app-container" id="mainApp">
+        <div class="header">
+            <div class="header-left">
+                <div class="app-icon">💰</div>
+                <div>
+                    <div class="app-title">薪金計</div>
+                    <div class="app-subtitle">實時追蹤 · 拒絕加班</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn" id="btnSettings" title="設定">⚙️</button>
+            </div>
+        </div>
+
+        <div class="status-bar" id="statusBar">
+            <div class="status-dot idle" id="statusDot"></div>
+            <span class="status-text" id="statusText">載入中...</span>
+            <span class="status-time" id="statusTime">--:--</span>
+        </div>
+
+        <div class="live-clock">
+            <div class="time-main" id="liveTime">--:--:--</div>
+            <div class="time-sec" id="liveSeconds">--</div>
+            <div class="date-str" id="liveDate">----年--月--日 --</div>
+        </div>
+
+        <div class="salary-grid">
+            <div class="salary-card today" id="cardToday">
+                <div class="card-label">💰 今日已賺</div>
+                <div class="card-amount" id="todayEarned">
+                    <span class="current">HK$ ---</span>
+                    <span class="separator">/</span>
+                    <span class="target">HK$ ---</span>
+                </div>
+                <div class="card-sub" id="todaySub">--</div>
+                <div class="progress-mini"><div class="progress-mini-fill" id="todayProgress" style="width:0%"></div></div>
+            </div>
+            <div class="salary-card week">
+                <div class="card-label">📅 本週累計</div>
+                <div class="card-amount" id="weekEarned">
+                    <span class="current">HK$ ---</span>
+                    <span class="separator">/</span>
+                    <span class="target">HK$ ---</span>
+                </div>
+                <div class="card-sub" id="weekSub">--</div>
+                <div class="progress-mini"><div class="progress-mini-fill" id="weekProgress" style="width:0%"></div></div>
+            </div>
+            <div class="salary-card month">
+                <div class="card-label">🏦 本月累計</div>
+                <div class="card-amount" id="monthEarned">
+                    <span class="current">HK$ ---</span>
+                    <span class="separator">/</span>
+                    <span class="target">HK$ ---</span>
+                </div>
+                <div class="card-sub" id="monthSub">--</div>
+                <div class="progress-mini"><div class="progress-mini-fill" id="monthProgress" style="width:0%"></div></div>
+            </div>
+        </div>
+
+        <div class="info-row">
+            <div class="info-chip">⏱ 時薪 <span class="chip-val" id="chipHourly">--</span></div>
+            <div class="info-chip">📆 日薪 <span class="chip-val" id="chipDaily">--</span></div>
+            <div class="info-chip">🏖 本月工作日 <span class="chip-val" id="chipWorkDays">--</span>天</div>
+        </div>
+
+        <div class="alert-banner" id="alertBanner" style="display:none;">
+            <span class="alert-icon">🚨</span>
+            <span class="alert-text" id="alertText">該下班了！</span>
+            <button class="alert-close" id="alertClose">✕</button>
+        </div>
+
+        <div class="section-title">🎉 倒數 · 連續3天以上假期</div>
+        <div class="countdown-card" id="countdownCard">
+            <div class="countdown-icon" id="cdIcon">🏖️</div>
+            <div class="countdown-info">
+                <div class="cd-label" id="cdLabel">下個長假期</div>
+                <div class="cd-days" id="cdDays">-- <small>天</small></div>
+                <div class="cd-detail" id="cdDetail">----</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定面板 -->
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-handle"></div>
+            <h3>⚙️ 設定</h3>
+            <div class="form-group"><label>月薪 (HKD)</label><input type="number" id="setSalary" placeholder="20000"></div>
+            <div class="form-row">
+                <div class="form-group"><label>上班時間</label><input type="time" id="setWorkStart"></div>
+                <div class="form-group"><label>下班時間</label><input type="time" id="setWorkEnd"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>午休開始</label><input type="time" id="setLunchStart"></div>
+                <div class="form-group"><label>午休結束</label><input type="time" id="setLunchEnd"></div>
+            </div>
+            <div class="form-group">
+                <label>每週工作天數</label>
+                <select id="setWorkDaysPerWeek">
+                    <option value="5">5天 (週一至週五)</option>
+                    <option value="6">6天 (週一至週六)</option>
+                    <option value="5.5">5.5天 (週一至週五 + 週六半天)</option>
+                </select>
+            </div>
+            <div class="toggle-row"><span>🔔 下班提醒通知</span><div class="toggle-switch" id="toggleNotification"></div></div>
+            <div class="toggle-row"><span>🔊 下班語音提示</span><div class="toggle-switch" id="toggleSound"></div></div>
+            <button class="btn-save" id="btnSaveSettings">💾 儲存設定</button>
+            <p style="font-size:0.65rem;color:var(--text-muted);text-align:center;margin-top:12px;">資料自動備份至Cookie · 永不丟失</p>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            const $ = (sel) => document.querySelector(sel);
+            const onboardingOverlay = $('#onboardingOverlay');
+            const statusDot = $('#statusDot');
+            const statusText = $('#statusText');
+            const statusTime = $('#statusTime');
+            const liveTime = $('#liveTime');
+            const liveDate = $('#liveDate');
+            const todayEarnedCur = document.querySelector('#todayEarned .current');
+            const todayEarnedTgt = document.querySelector('#todayEarned .target');
+            const todaySub = $('#todaySub');
+            const todayProgress = $('#todayProgress');
+            const weekEarnedCur = document.querySelector('#weekEarned .current');
+            const weekEarnedTgt = document.querySelector('#weekEarned .target');
+            const weekSub = $('#weekSub');
+            const weekProgress = $('#weekProgress');
+            const monthEarnedCur = document.querySelector('#monthEarned .current');
+            const monthEarnedTgt = document.querySelector('#monthEarned .target');
+            const monthSub = $('#monthSub');
+            const monthProgress = $('#monthProgress');
+            const chipHourly = $('#chipHourly');
+            const chipDaily = $('#chipDaily');
+            const chipWorkDays = $('#chipWorkDays');
+            const alertBanner = $('#alertBanner');
+            const alertText = $('#alertText');
+            const alertClose = $('#alertClose');
+            const countdownCard = $('#countdownCard');
+            const cdIcon = $('#cdIcon');
+            const cdLabel = $('#cdLabel');
+            const cdDays = $('#cdDays');
+            const cdDetail = $('#cdDetail');
+            const settingsOverlay = $('#settingsOverlay');
+            const btnSettings = $('#btnSettings');
+            const btnSaveSettings = $('#btnSaveSettings');
+            const toggleNotification = $('#toggleNotification');
+            const toggleSound = $('#toggleSound');
+            const toast = $('#toast');
+
+            const DEFAULT_SETTINGS = {
+                monthlySalary: 20000,
+                workStart: '09:00',
+                workEnd: '18:00',
+                lunchStart: '12:00',
+                lunchEnd: '13:00',
+                workDaysPerWeek: 5,
+                enableNotification: false,
+                enableSound: false
+            };
+            let settings = { ...DEFAULT_SETTINGS };
+            let alertDismissed = false;
+            let lastAlertDate = null;
+
+            // Cookie 備份
+            function saveSettingsToCookie(settingsObj) {
+                try {
+                    const value = encodeURIComponent(JSON.stringify(settingsObj));
+                    const expires = new Date(Date.now() + 365*24*60*60*1000).toUTCString();
+                    document.cookie = `salary_settings=${value}; expires=${expires}; path=/; SameSite=Lax`;
+                } catch(e) {}
+            }
+
+            function loadSettingsFromCookie() {
+                const match = document.cookie.match(/(?:^|;\s*)salary_settings=([^;]*)/);
+                if (match) {
+                    try {
+                        return JSON.parse(decodeURIComponent(match[1]));
+                    } catch(e) {}
+                }
+                return null;
+            }
+
+            function loadSettings() {
+                let saved = null;
+                try {
+                    const raw = localStorage.getItem('salaryTracker_settings');
+                    if (raw) saved = JSON.parse(raw);
+                } catch(e) {}
+                if (!saved) {
+                    saved = loadSettingsFromCookie();
+                    if (saved) {
+                        try { localStorage.setItem('salaryTracker_settings', JSON.stringify(saved)); } catch(e) {}
+                    }
+                }
+                if (saved) settings = { ...DEFAULT_SETTINGS, ...saved };
+                return !!saved;
+            }
+
+            function persistSettings() {
+                try { localStorage.setItem('salaryTracker_settings', JSON.stringify(settings)); } catch(e) {}
+                saveSettingsToCookie(settings);
+            }
+
+            function applySettingsToUI() {
+                $('#setSalary').value = settings.monthlySalary;
+                $('#setWorkStart').value = settings.workStart;
+                $('#setWorkEnd').value = settings.workEnd;
+                $('#setLunchStart').value = settings.lunchStart;
+                $('#setLunchEnd').value = settings.lunchEnd;
+                const wdMap = {5:'5', 5.5:'5.5', 6:'6'};
+                $('#setWorkDaysPerWeek').value = wdMap[settings.workDaysPerWeek] || '5';
+                toggleNotification.classList.toggle('on', settings.enableNotification);
+                toggleSound.classList.toggle('on', settings.enableSound);
+            }
+
+            function showToast(msg) {
+                toast.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(toast._timeout);
+                toast._timeout = setTimeout(() => toast.classList.remove('show'), 2200);
+            }
+
+            function parseTimeStr(str) {
+                const [h,m] = str.split(':').map(Number);
+                return {hours:h, minutes:m, totalMinutes:h*60+m};
+            }
+
+            function getNow() {
+                const now = new Date();
+                return {
+                    date: now,
+                    year: now.getFullYear(),
+                    month: now.getMonth(),
+                    day: now.getDate(),
+                    weekday: now.getDay(),
+                    hours: now.getHours(),
+                    minutes: now.getMinutes(),
+                    seconds: now.getSeconds(),
+                    totalMinutes: now.getHours()*60 + now.getMinutes()
+                };
+            }
+
+            // 香港公眾假期2026（真實名稱）
+            function getHKHolidays2026() {
+                return [
+                    { dateStr: '2026-01-01', name: '元旦' },
+                    { dateStr: '2026-02-17', name: '農曆年初一' },
+                    { dateStr: '2026-02-18', name: '農曆年初二' },
+                    { dateStr: '2026-02-19', name: '農曆年初三' },
+                    { dateStr: '2026-04-03', name: '耶穌受難節' },
+                    { dateStr: '2026-04-04', name: '耶穌受難節翌日' },
+                    { dateStr: '2026-04-05', name: '清明節' },
+                    { dateStr: '2026-04-06', name: '復活節星期一' },
+                    { dateStr: '2026-05-01', name: '勞動節' },
+                    { dateStr: '2026-05-24', name: '佛誕' },
+                    { dateStr: '2026-06-19', name: '端午節' },
+                    { dateStr: '2026-07-01', name: '香港特區成立紀念日' },
+                    { dateStr: '2026-09-26', name: '中秋節翌日' },
+                    { dateStr: '2026-10-01', name: '國慶日' },
+                    { dateStr: '2026-10-18', name: '重陽節' },
+                    { dateStr: '2026-12-25', name: '聖誕節' },
+                    { dateStr: '2026-12-26', name: '聖誕節翌日' },
+                ];
+            }
+
+            const holidayNameMap = new Map(getHKHolidays2026().map(h => [h.dateStr, h.name]));
+
+            function isWeekend(weekday, wpw) {
+                if (wpw === 5) return weekday === 0 || weekday === 6;
+                if (wpw === 6) return weekday === 0;
+                if (wpw === 5.5) return weekday === 0;
+                return weekday === 0;
+            }
+
+            function isPublicHoliday(dateStr) {
+                return holidayNameMap.has(dateStr);
+            }
+
+            function getHolidayName(dateStr) {
+                return holidayNameMap.get(dateStr) || null;
+            }
+
+            function isWorkDay(y, m, d, wpw) {
+                const wd = new Date(y, m, d).getDay();
+                const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                return !isWeekend(wd, wpw) && !isPublicHoliday(ds);
+            }
+
+            function isHalfDay(y, m, d, wpw) {
+                if (wpw !== 5.5) return false;
+                if (new Date(y, m, d).getDay() === 6) {
+                    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    return !isPublicHoliday(ds);
+                }
+                return false;
+            }
+
+            function countWorkDaysInMonth(y, m, wpw) {
+                const dim = new Date(y, m+1, 0).getDate();
+                let total = 0;
+                for (let d = 1; d <= dim; d++) {
+                    if (isWorkDay(y, m, d, wpw)) total += 1;
+                    else if (isHalfDay(y, m, d, wpw)) total += 0.5;
+                }
+                return total;
+            }
+
+            function countWorkDaysUpTo(y, m, day, wpw) {
+                let total = 0;
+                for (let d = 1; d <= day; d++) {
+                    if (isWorkDay(y, m, d, wpw)) total += 1;
+                    else if (isHalfDay(y, m, d, wpw)) total += 0.5;
+                }
+                return total;
+            }
+
+            function getWorkDaysInWeekUpTo(y, m, day, wpw) {
+                const now = new Date(y, m, day);
+                const wd = now.getDay();
+                const mondayOffset = wd === 0 ? -6 : 1 - wd;
+                const monday = new Date(y, m, day + mondayOffset);
+                let total = 0;
+                const daysSinceMon = wd === 0 ? 6 : wd - 1;
+                for (let i = 0; i < daysSinceMon; i++) {
+                    const d = new Date(monday);
+                    d.setDate(monday.getDate() + i);
+                    if (isWorkDay(d.getFullYear(), d.getMonth(), d.getDate(), wpw)) total += 1;
+                    else if (isHalfDay(d.getFullYear(), d.getMonth(), d.getDate(), wpw)) total += 0.5;
+                }
+                return total;
+            }
+
+            function getWorkDaysCurrentWeek(y, m, d, wpw) {
+                const now = new Date(y, m, d);
+                const wd = now.getDay();
+                const mondayOffset = wd === 0 ? -6 : 1 - wd;
+                const monday = new Date(y, m, d + mondayOffset);
+                let total = 0;
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(monday);
+                    date.setDate(monday.getDate() + i);
+                    const yy = date.getFullYear(), mm = date.getMonth(), dd = date.getDate();
+                    if (isWorkDay(yy, mm, dd, wpw)) total += 1;
+                    else if (isHalfDay(yy, mm, dd, wpw)) total += 0.5;
+                }
+                return total;
+            }
+
+            function getWorkHoursPerDay() {
+                const s = parseTimeStr(settings.workStart);
+                const e = parseTimeStr(settings.workEnd);
+                const ls = parseTimeStr(settings.lunchStart);
+                const le = parseTimeStr(settings.lunchEnd);
+                let totalMin = e.totalMinutes - s.totalMinutes;
+                const overlap = Math.min(e.totalMinutes, le.totalMinutes) - Math.max(s.totalMinutes, ls.totalMinutes);
+                if (overlap > 0) totalMin -= overlap;
+                return totalMin / 60;
+            }
+
+            function getWorkHoursHalf() {
+                const s = parseTimeStr(settings.workStart);
+                const halfEnd = parseTimeStr('13:00');
+                let endMin = Math.min(halfEnd.totalMinutes, parseTimeStr(settings.workEnd).totalMinutes);
+                if (endMin <= s.totalMinutes) endMin = s.totalMinutes + 240;
+                return (endMin - s.totalMinutes) / 60;
+            }
+
+            function calcDailySalary(y, m, wpw) {
+                const total = countWorkDaysInMonth(y, m, wpw);
+                return total > 0 ? settings.monthlySalary / total : settings.monthlySalary / 22;
+            }
+
+            function calcHourlyRate(daily, isHalf) {
+                const hours = isHalf ? getWorkHoursHalf() : getWorkHoursPerDay();
+                return hours > 0 ? daily / hours : daily / 8;
+            }
+
+            function calcTodayEarned(now, isWd, isHd, hourly, daily) {
+                if (!isWd && !isHd) return { earned:0, status:'holiday', hoursWorked:0, percent:0 };
+                const s = parseTimeStr(settings.workStart);
+                const e = parseTimeStr(settings.workEnd);
+                const ls = parseTimeStr(settings.lunchStart);
+                const le = parseTimeStr(settings.lunchEnd);
+                const effEnd = isHd ? parseTimeStr('13:00') : e;
+                const totalMin = (effEnd.totalMinutes - s.totalMinutes) -
+                    (isHd ? 0 : Math.max(0, Math.min(e.totalMinutes, le.totalMinutes) - Math.max(s.totalMinutes, ls.totalMinutes)));
+                if (totalMin <= 0) return { earned:0, status:'idle', hoursWorked:0, percent:0 };
+                const nowMin = now.totalMinutes;
+                if (nowMin < s.totalMinutes) return { earned:0, status:'before-work', hoursWorked:0, percent:0 };
+                if (nowMin >= effEnd.totalMinutes) return {
+                    earned: daily * (isHd ? 0.5 : 1),
+                    status: 'after-work',
+                    hoursWorked: totalMin/60,
+                    percent: 100
+                };
+                let worked = nowMin - s.totalMinutes;
+                if (!isHd && nowMin > ls.totalMinutes) {
+                    const overlap = Math.min(nowMin, le.totalMinutes) - Math.max(s.totalMinutes, ls.totalMinutes);
+                    if (overlap > 0) worked -= overlap;
+                    if (nowMin >= ls.totalMinutes && nowMin < le.totalMinutes) {
+                        worked = ls.totalMinutes - s.totalMinutes;
+                    }
+                }
+                worked = Math.max(0, Math.min(worked, totalMin));
+                const earned = hourly * (worked / 60);
+                const percent = Math.round((worked / totalMin) * 100);
+                let status = 'working';
+                if (!isHd && nowMin >= ls.totalMinutes && nowMin < le.totalMinutes) status = 'lunch';
+                return { earned, status, hoursWorked: worked/60, percent };
+            }
+
+            function findLongHolidayBlocks(year) {
+                const holidays = getHKHolidays2026();
+                const holMap = new Map(holidays.map(h => [h.dateStr, h.name]));
+                const all = [];
+                const start = new Date(year, 0, 1);
+                const end = new Date(year, 11, 31);
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
+                    const ds = d.toISOString().split('T')[0];
+                    const wd = d.getDay();
+                    const isPH = holMap.has(ds);
+                    const off = isPH || wd === 0 || wd === 6;
+                    all.push({ dateStr: ds, off, holidayName: isPH ? holMap.get(ds) : null });
+                }
+                const blocks = [];
+                let cur = [];
+                for (const day of all) {
+                    if (day.off) {
+                        cur.push(day);
+                    } else {
+                        if (cur.length >= 3) blocks.push([...cur]);
+                        cur = [];
+                    }
+                }
+                if (cur.length >= 3) blocks.push([...cur]);
+                return blocks;
+            }
+
+            function getNextLongHoliday(now) {
+                let blocks = findLongHolidayBlocks(now.year);
+                blocks = blocks.concat(findLongHolidayBlocks(now.year + 1));
+                const today = `${now.year}-${String(now.month+1).padStart(2,'0')}-${String(now.day).padStart(2,'0')}`;
+                for (const b of blocks) {
+                    const start = b[0].dateStr;
+                    const end = b[b.length-1].dateStr;
+                    if (end >= today) {
+                        if (start <= today && end >= today) {
+                            return { block: b, daysLeft: 0, isCurrent: true };
+                        }
+                        if (start > today) {
+                            const diff = Math.ceil((new Date(start+'T00:00:00') - new Date(today+'T00:00:00')) / 86400000);
+                            return { block: b, daysLeft: diff, isCurrent: false };
+                        }
+                    }
+                }
+                return null;
+            }
+
+            function formatCurrency(amount) {
+                return 'HK$ ' + (amount < 100 ? amount.toFixed(2) : amount.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+            }
+
+            function formatCurrencyCompact(amount) {
+                if (amount >= 10000) return 'HK$ ' + (amount/1000).toFixed(1) + 'K';
+                return formatCurrency(amount);
+            }
+
+            function updateAll() {
+                const now = getNow();
+                const y = now.year, m = now.month, d = now.day;
+                const wpw = settings.workDaysPerWeek;
+                const isWd = isWorkDay(y, m, d, wpw);
+                const isHd = isHalfDay(y, m, d, wpw);
+                const daily = calcDailySalary(y, m, wpw);
+                const hourly = calcHourlyRate(daily, isHd);
+                const todayRes = calcTodayEarned(now, isWd, isHd, hourly, daily);
+
+                const monthWorkDays = countWorkDaysInMonth(y, m, wpw);
+                const monthUpTo = countWorkDaysUpTo(y, m, d, wpw);
+                const weekUpTo = getWorkDaysInWeekUpTo(y, m, d, wpw);
+                const weekTotalDays = getWorkDaysCurrentWeek(y, m, d, wpw);
+
+                const todayTarget = (isWd || isHd) ? daily * (isHd ? 0.5 : 1) : 0;
+                const weekTarget = weekTotalDays * daily;
+                const monthTarget = monthWorkDays * daily;
+
+                const weekEarnedVal = weekUpTo * daily + todayRes.earned;
+                const monthEarnedVal = (monthUpTo - (isWd||isHd ? (isHd?0.5:1) : 0)) * daily + todayRes.earned;
+
+                // 今日卡片
+                todayEarnedCur.textContent = formatCurrency(todayRes.earned);
+                todayEarnedTgt.textContent = formatCurrency(todayTarget);
+                todayProgress.style.width = (isWd||isHd) ? todayRes.percent+'%' : '0%';
+                if (isWd || isHd) {
+                    todaySub.textContent = `已工作 ${todayRes.hoursWorked.toFixed(1)}h`;
+                } else {
+                    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    todaySub.textContent = isPublicHoliday(ds) ? `🎌 ${getHolidayName(ds)} · 假期` : '🌴 休息日';
+                }
+
+                // 本週卡片
+                weekEarnedCur.textContent = formatCurrencyCompact(weekEarnedVal);
+                weekEarnedTgt.textContent = formatCurrencyCompact(weekTarget);
+                weekProgress.style.width = weekTarget > 0 ? Math.min(100, (weekEarnedVal/weekTarget)*100)+'%' : '0%';
+                weekSub.textContent = `本週目標 ${formatCurrencyCompact(weekTarget)}`;
+
+                // 本月卡片
+                monthEarnedCur.textContent = formatCurrencyCompact(monthEarnedVal);
+                monthEarnedTgt.textContent = formatCurrencyCompact(monthTarget);
+                monthProgress.style.width = monthTarget > 0 ? Math.min(100, (monthEarnedVal/monthTarget)*100)+'%' : '0%';
+                monthSub.textContent = `本月目標 ${formatCurrencyCompact(monthTarget)}`;
+
+                // 資訊列
+                chipHourly.textContent = formatCurrency(hourly) + '/h';
+                chipDaily.textContent = formatCurrency(daily);
+                chipWorkDays.textContent = monthWorkDays;
+
+                // 狀態列
+                const dot = statusDot;
+                dot.className = 'status-dot';
+                let txt = '';
+                if (!isWd && !isHd) {
+                    dot.classList.add('holiday');
+                    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    txt = isPublicHoliday(ds) ? `🎌 ${getHolidayName(ds)}` : '休息日';
+                } else if (todayRes.status === 'before-work') { dot.classList.add('idle'); txt = '準備上班'; }
+                else if (todayRes.status === 'working') { dot.classList.add('working'); txt = '工作中'; }
+                else if (todayRes.status === 'lunch') { dot.classList.add('lunch'); txt = '午休中'; }
+                else if (todayRes.status === 'after-work') { dot.classList.add('off'); txt = '已下班'; }
+                statusText.textContent = txt;
+                statusTime.textContent = `${String(now.hours).padStart(2,'0')}:${String(now.minutes).padStart(2,'0')}`;
+
+                // 即時時鐘
+                liveTime.textContent = `${String(now.hours).padStart(2,'0')}:${String(now.minutes).padStart(2,'0')}:${String(now.seconds).padStart(2,'0')}`;
+                liveDate.textContent = `${y}年${m+1}月${d}日 星期${['日','一','二','三','四','五','六'][now.weekday]}`;
+
+                // 下班提醒
+                if (todayRes.status === 'after-work' && !alertDismissed) {
+                    const todayStr = `${y}-${m+1}-${d}`;
+                    if (lastAlertDate !== todayStr) {
+                        alertBanner.style.display = 'flex';
+                        alertText.textContent = '🚨 已經過咗下班時間！請馬上收工！';
+                        lastAlertDate = todayStr;
+                        if (settings.enableNotification && Notification.permission === 'granted') {
+                            try { new Notification('收工啦！', { body: '已到下班時間', tag: 'off' }); } catch(e) {}
+                        }
+                        if (settings.enableSound) {
+                            try {
+                                const ac = new AudioContext();
+                                const o = ac.createOscillator();
+                                o.connect(ac.destination);
+                                o.frequency.value = 800;
+                                o.start();
+                                o.stop(ac.currentTime + 0.2);
+                            } catch(e) {}
+                        }
+                    }
+                } else if (todayRes.status !== 'after-work') {
+                    alertBanner.style.display = 'none';
+                }
+
+                // 長假期倒數
+                const hl = getNextLongHoliday(now);
+                if (hl) {
+                    const block = hl.block;
+                    const totalDays = block.length;
+                    const names = [...new Set(block.filter(d => d.holidayName).map(d => d.holidayName))];
+                    const nameStr = names.length > 0 ? names.slice(0,2).join('、') : '長週末';
+                    cdIcon.textContent = hl.isCurrent ? '🎉' : (hl.daysLeft <= 7 ? '🔥' : '🏖️');
+                    cdLabel.textContent = hl.isCurrent ? '正在享受假期！' : '下個長假期';
+                    cdDays.innerHTML = hl.isCurrent ? '0 <small>天 (假期中)</small>' : `${hl.daysLeft} <small>天</small>`;
+                    cdDetail.textContent = `${nameStr} · ${block[0].dateStr} - ${block[block.length-1].dateStr} · 共${totalDays}天`;
+                    countdownCard.classList.toggle('urgent', !hl.isCurrent && hl.daysLeft <= 7);
+                } else {
+                    cdIcon.textContent = '📅';
+                    cdLabel.textContent = '暫無長假期';
+                    cdDays.innerHTML = '-- <small>天</small>';
+                    cdDetail.textContent = '';
+                    countdownCard.classList.remove('urgent');
+                }
+
+                document.querySelector('#cardToday').classList.toggle('today', isWd || isHd);
+            }
+
+            function openSettings() { settingsOverlay.classList.add('open'); }
+            function closeSettings() { settingsOverlay.classList.remove('open'); }
+
+            function onboardSave() {
+                settings.monthlySalary = Math.max(1000, parseInt($('#onboardSalary').value) || 20000);
+                settings.workStart = $('#onboardWorkStart').value || '09:00';
+                settings.workEnd = $('#onboardWorkEnd').value || '18:00';
+                settings.lunchStart = $('#onboardLunchStart').value || '12:00';
+                settings.lunchEnd = $('#onboardLunchEnd').value || '13:00';
+                const wd = $('#onboardWorkDaysPerWeek').value;
+                settings.workDaysPerWeek = wd === '5.5' ? 5.5 : (parseInt(wd) || 5);
+                settings.enableNotification = false;
+                settings.enableSound = false;
+                persistSettings();
+                applySettingsToUI();
+                onboardingOverlay.classList.add('hidden');
+                showToast('✅ 設定完成！開始追蹤薪金');
+                updateAll();
+            }
+
+            btnSaveSettings.addEventListener('click', () => {
+                settings.monthlySalary = Math.max(1000, Math.min(999999, parseInt($('#setSalary').value) || 20000));
+                settings.workStart = $('#setWorkStart').value || DEFAULT_SETTINGS.workStart;
+                settings.workEnd = $('#setWorkEnd').value || DEFAULT_SETTINGS.workEnd;
+                settings.lunchStart = $('#setLunchStart').value || DEFAULT_SETTINGS.lunchStart;
+                settings.lunchEnd = $('#setLunchEnd').value || DEFAULT_SETTINGS.lunchEnd;
+                const wdVal = $('#setWorkDaysPerWeek').value;
+                settings.workDaysPerWeek = wdVal === '5.5' ? 5.5 : (parseInt(wdVal) || 5);
+                settings.enableNotification = toggleNotification.classList.contains('on');
+                settings.enableSound = toggleSound.classList.contains('on');
+                persistSettings();
+                applySettingsToUI();
+                closeSettings();
+                alertDismissed = false;
+                lastAlertDate = null;
+                updateAll();
+                showToast('✅ 設定已儲存');
+            });
+
+            btnSettings.addEventListener('click', openSettings);
+            settingsOverlay.addEventListener('click', e => { if (e.target === settingsOverlay) closeSettings(); });
+            alertClose.addEventListener('click', () => {
+                alertBanner.style.display = 'none';
+                alertDismissed = true;
+            });
+            toggleNotification.addEventListener('click', function() { this.classList.toggle('on'); });
+            toggleSound.addEventListener('click', function() { this.classList.toggle('on'); });
+            $('#btnOnboardSave').addEventListener('click', onboardSave);
+
+            function init() {
+                const hasSettings = loadSettings();
+                applySettingsToUI();
+                if (!hasSettings) {
+                    onboardingOverlay.classList.remove('hidden');
+                } else {
+                    onboardingOverlay.classList.add('hidden');
+                }
+                updateAll();
+                setInterval(updateAll, 1000);
+                if (settings.enableNotification && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            }
+            init();
+        })();
+    </script>
+</body>
+</html>
