@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0f172a">
-    <title>香港打工薪金計 · 實時薪酬追蹤</title>
+    <meta name="theme-color" content="#0b0f19">
+    <title>香港打工薪金計 · 實時薪酬與假期追蹤</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -86,7 +86,7 @@
 
             <hr class="border-cardBorder my-4">
 
-            <!-- 模式選擇 (自訂 vs MPS) -->
+            <!-- 模式選擇 -->
             <div class="mb-4">
                 <label class="block text-xs font-semibold text-slate-300 mb-2">薪酬計算模式</label>
                 <div class="grid grid-cols-2 gap-2 bg-darkBg p-1 rounded-xl border border-cardBorder">
@@ -105,7 +105,6 @@
             <div id="obMpsGroup" class="mb-4 hidden">
                 <label class="block text-xs font-semibold text-slate-300 mb-1">總薪級表 (Master Pay Scale Point 0 - 44)</label>
                 <select id="obMpsSelect" class="w-full bg-darkBg border border-cardBorder rounded-xl px-3 py-2.5 text-white font-mono focus:outline-none focus:border-amber-500 transition-colors">
-                    <!-- JS 動態生成 MPS 點數 -->
                 </select>
                 <div class="mt-1.5 text-right text-xs text-amber-400 font-mono" id="obMpsDisplay">點數月薪: HK$ 14,570</div>
             </div>
@@ -145,15 +144,15 @@
             <button id="btnObSave" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-2xl shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all">
                 🚀 開始追蹤薪酬
             </button>
-            <p class="text-[10px] text-slate-500 text-center mt-3">設定會自動儲存至瀏覽器本地 Cookie，隨時可在右上角變更</p>
+            <p class="text-[10px] text-slate-500 text-center mt-3">設定將自動備份至 LocalStorage 與 Cookie</p>
         </div>
     </div>
 
     <!-- 主介面 App Container -->
-    <div class="w-full max-w-md flex flex-col gap-4 pb-12">
+    <div class="w-full max-w-md flex flex-col gap-3.5 pb-12">
         
         <!-- Header 頁首 -->
-        <div class="flex items-center justify-between py-2 px-1">
+        <div class="flex items-center justify-between py-1 px-1">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-xl shadow-md shadow-amber-500/20">
                     💰
@@ -163,31 +162,30 @@
                     <p class="text-[10px] text-amber-400 font-semibold tracking-wider uppercase" id="headerSub">自訂薪金模式</p>
                 </div>
             </div>
-            <button id="btnOpenSettings" class="w-10 h-10 rounded-full bg-cardBg border border-cardBorder flex items-center justify-center text-slate-300 hover:text-white active:scale-95 transition-all shadow-md">
-                ⚙️
-            </button>
-        </div>
-
-        <!-- 狀態卡片 Status Bar -->
-        <div class="bg-cardBg border border-cardBorder rounded-2xl p-3.5 flex items-center gap-3 shadow-lg">
-            <div id="statusDot" class="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse-dot"></div>
-            <div class="flex-1">
-                <div class="text-xs text-slate-400" id="statusTitle">狀態</div>
-                <div class="text-sm font-bold text-white" id="statusText">工作中</div>
-            </div>
-            <div class="text-right">
-                <div class="text-[10px] text-slate-500 font-mono uppercase">Current Time</div>
-                <div class="text-base font-bold font-mono text-amber-300" id="statusClock">12:34:56</div>
+            <div class="flex items-center gap-2">
+                <button id="btnToggleSound" class="w-9 h-9 rounded-full bg-cardBg border border-cardBorder flex items-center justify-center text-slate-300 hover:text-white active:scale-95 transition-all shadow-md text-sm" title="提示音效">
+                    🔔
+                </button>
+                <button id="btnOpenSettings" class="w-9 h-9 rounded-full bg-cardBg border border-cardBorder flex items-center justify-center text-slate-300 hover:text-white active:scale-95 transition-all shadow-md text-sm">
+                    ⚙️
+                </button>
             </div>
         </div>
 
-        <!-- Live Clock & Date -->
-        <div class="text-center py-2 bg-cardBg/40 border border-cardBorder/50 rounded-2xl">
-            <div class="text-3xl font-extrabold font-mono text-white tracking-tight" id="mainLiveClock">
-                00:00:<span class="text-amber-400 text-xl" id="mainLiveSec">00</span>
+        <!-- 整合簡化：單一 Live Clock + 狀態整合區域 -->
+        <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl text-center relative overflow-hidden">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <div id="statusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse-dot"></div>
+                    <span class="text-xs font-bold text-slate-300" id="statusText">工作中</span>
+                </div>
+                <div class="text-[11px] font-medium text-slate-400" id="mainLiveDate">
+                    2026年9月28日 星期一
+                </div>
             </div>
-            <div class="text-xs text-slate-400 mt-1 font-medium" id="mainLiveDate">
-                2026年1月1日 星期四
+
+            <div class="text-4xl sm:text-5xl font-extrabold font-mono text-white tracking-tight my-1">
+                <span id="mainLiveClockHHMM">12:34</span><span class="text-amber-400 text-2xl sm:text-3xl" id="mainLiveSec">:56</span>
             </div>
         </div>
 
@@ -196,7 +194,7 @@
             <!-- 今日 -->
             <div class="bg-cardBg border border-emerald-500/30 rounded-2xl p-3 text-center flex flex-col justify-between shadow-md relative overflow-hidden group">
                 <div class="text-[10px] font-bold text-emerald-400 tracking-wider uppercase mb-1">今日已賺</div>
-                <div class="font-mono font-bold text-sm text-white my-1" id="todayEarned">
+                <div class="font-mono font-bold text-sm sm:text-base text-white my-1 truncate" id="todayEarned">
                     <span class="text-emerald-400">HK$ 0</span>
                 </div>
                 <div class="text-[9px] text-slate-400 truncate" id="todaySub">目標 HK$ 0</div>
@@ -208,7 +206,7 @@
             <!-- 本週 -->
             <div class="bg-cardBg border border-amber-500/30 rounded-2xl p-3 text-center flex flex-col justify-between shadow-md relative overflow-hidden">
                 <div class="text-[10px] font-bold text-amber-400 tracking-wider uppercase mb-1">本週累計</div>
-                <div class="font-mono font-bold text-sm text-white my-1" id="weekEarned">
+                <div class="font-mono font-bold text-sm sm:text-base text-white my-1 truncate" id="weekEarned">
                     <span class="text-amber-300">HK$ 0</span>
                 </div>
                 <div class="text-[9px] text-slate-400 truncate" id="weekSub">目標 HK$ 0</div>
@@ -220,7 +218,7 @@
             <!-- 本月 -->
             <div class="bg-cardBg border border-blue-500/30 rounded-2xl p-3 text-center flex flex-col justify-between shadow-md relative overflow-hidden">
                 <div class="text-[10px] font-bold text-blue-400 tracking-wider uppercase mb-1">本月累計</div>
-                <div class="font-mono font-bold text-sm text-white my-1" id="monthEarned">
+                <div class="font-mono font-bold text-sm sm:text-base text-white my-1 truncate" id="monthEarned">
                     <span class="text-blue-400">HK$ 0</span>
                 </div>
                 <div class="text-[9px] text-slate-400 truncate" id="monthSub">目標 HK$ 0</div>
@@ -232,15 +230,15 @@
 
         <!-- 數據統計晶片 Row -->
         <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs custom-scrollbar">
-            <div class="bg-cardBg border border-cardBorder rounded-xl px-3 py-2 flex items-center gap-2 whitespace-nowrap">
+            <div class="bg-cardBg border border-cardBorder rounded-xl px-3 py-2 flex items-center gap-1.5 whitespace-nowrap">
                 <span class="text-slate-400">⏱ 時薪:</span>
                 <span id="chipHourly" class="font-mono font-bold text-amber-300">HK$ 0</span>
             </div>
-            <div class="bg-cardBg border border-cardBorder rounded-xl px-3 py-2 flex items-center gap-2 whitespace-nowrap">
+            <div class="bg-cardBg border border-cardBorder rounded-xl px-3 py-2 flex items-center gap-1.5 whitespace-nowrap">
                 <span class="text-slate-400">📆 日薪:</span>
                 <span id="chipDaily" class="font-mono font-bold text-emerald-300">HK$ 0</span>
             </div>
-            <div class="bg-cardBg border border-cardBorder rounded-xl px-3 py-2 flex items-center gap-2 whitespace-nowrap">
+            <div class="bg-cardBg border border-cardBorder rounded-xl px-3 py-2 flex items-center gap-1.5 whitespace-nowrap">
                 <span class="text-slate-400">🏖 本月工作日:</span>
                 <span id="chipDays" class="font-mono font-bold text-blue-300">0 天</span>
             </div>
@@ -258,18 +256,27 @@
             <button id="btnCloseAlert" class="text-slate-400 hover:text-white p-1 text-lg">✕</button>
         </div>
 
-        <!-- 長假期倒數卡片 -->
-        <div class="mt-1">
-            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-1 flex items-center justify-between">
-                <span>🏖️ 3天或以上長假期倒數</span>
-                <span class="text-[10px] text-slate-500">2026 - 2027 香港假期</span>
+        <!-- 假期倒數區域 (下個假期/休息日 + 長假期倒數) -->
+        <div class="flex flex-col gap-2.5 mt-1">
+            <!-- 下一個假期 / 休息日 -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-3.5 flex items-center gap-3 shadow-lg">
+                <div class="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-2xl shrink-0">
+                    🎈
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-[11px] text-slate-400" id="nextOffTitle">下個假期 / 休息日</div>
+                    <div class="text-lg font-bold font-mono text-white" id="nextOffDays">-- 天</div>
+                    <div class="text-xs text-blue-300 truncate" id="nextOffDetail">載入中...</div>
+                </div>
             </div>
+
+            <!-- 長假期倒數卡片 (≥3天) -->
             <div id="countdownCard" class="bg-cardBg border border-cardBorder rounded-2xl p-4 flex items-center gap-4 shadow-lg transition-all">
-                <div id="cdIcon" class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl shrink-0">
+                <div id="cdIcon" class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl shrink-0">
                     🌴
                 </div>
                 <div class="flex-1 min-w-0">
-                    <div class="text-xs text-slate-400" id="cdTitle">下個長假期</div>
+                    <div class="text-xs text-slate-400" id="cdTitle">下個長假期 (≥3天)</div>
                     <div class="text-2xl font-extrabold font-mono text-white my-0.5" id="cdDays">
                         -- <span class="text-xs font-normal text-slate-400">天</span>
                     </div>
@@ -358,7 +365,7 @@
 
     <script>
         (function() {
-            // === Master Pay Scale (MPS) 數據點 0 - 44 (2024/2025/2026 最新數據) ===
+            // === Master Pay Scale (MPS) 完整數據點 Point 0 - 44 ===
             const MPS_TABLE = {
                 0: 14570,  1: 15485,  2: 16460,  3: 17545,  4: 18675,
                 5: 19930,  6: 21190,  7: 22590,  8: 24060,  9: 25620,
@@ -371,7 +378,7 @@
                 40: 103810, 41: 108280, 42: 112955, 43: 117805, 44: 122045
             };
 
-            // === 2026 & 2027 香港公眾假期官方列表 ===
+            // === 2026 & 2027 香港公眾假期完整政府刊憲數據 (含精確補假名稱) ===
             const HK_HOLIDAYS = {
                 // 2026
                 '2026-01-01': '元旦',
@@ -386,7 +393,7 @@
                 '2026-05-24': '佛誕',
                 '2026-05-25': '佛誕翌日補假',
                 '2026-06-19': '端午節',
-                '2026-07-01': '香港特區成立紀念日',
+                '2026-07-01': '特區成立紀念日',
                 '2026-09-26': '中秋節翌日',
                 '2026-10-01': '國慶日',
                 '2026-10-18': '重陽節',
@@ -406,7 +413,7 @@
                 '2027-05-01': '勞動節',
                 '2027-05-13': '佛誕',
                 '2027-06-09': '端午節',
-                '2027-07-01': '香港特區成立紀念日',
+                '2027-07-01': '特區成立紀念日',
                 '2027-09-16': '中秋節翌日',
                 '2027-10-01': '國慶日',
                 '2027-10-08': '重陽節',
@@ -414,25 +421,53 @@
                 '2027-12-27': '聖誕節翌日補假'
             };
 
-            // 預設設定
             const DEFAULT_SETTINGS = {
-                salaryMode: 'custom', // 'custom' 或 'mps'
+                salaryMode: 'custom',
                 customSalary: 25000,
                 mpsPoint: 0,
                 workStart: '09:00',
                 workEnd: '18:00',
                 lunchStart: '12:00',
                 lunchEnd: '13:00',
-                workDaysPerWeek: 5
+                workDaysPerWeek: 5,
+                soundEnabled: true
             };
 
             let currentSettings = { ...DEFAULT_SETTINGS };
             let alertDismissed = false;
+            let hasPlayedSoundThisSession = false;
 
-            // DOM 元素引用
             const $ = id => document.getElementById(id);
 
-            // Cookie 處理
+            // Web Audio API 音效播放 (無外部資源依賴)
+            function playOffWorkSound() {
+                if (!currentSettings.soundEnabled) return;
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const now = ctx.currentTime;
+
+                    const osc1 = ctx.createOscillator();
+                    const gain1 = ctx.createGain();
+                    osc1.type = 'sine';
+                    osc1.frequency.setValueAtTime(523.25, now); // C5
+                    osc1.frequency.setValueAtTime(659.25, now + 0.15); // E5
+                    osc1.frequency.setValueAtTime(783.99, now + 0.3); // G5
+                    osc1.frequency.setValueAtTime(1046.50, now + 0.45); // C6
+
+                    gain1.gain.setValueAtTime(0.3, now);
+                    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+                    osc1.connect(gain1);
+                    gain1.connect(ctx.destination);
+
+                    osc1.start(now);
+                    osc1.stop(now + 0.8);
+                } catch(e) {}
+            }
+
+            // LocalStorage + Cookie 雙重備份
+            const STORAGE_KEY = 'hk_salary_tracker_config';
+
             function setCookie(name, val, days = 365) {
                 const exp = new Date(Date.now() + days*86400000).toUTCString();
                 document.cookie = `${name}=${encodeURIComponent(JSON.stringify(val))}; expires=${exp}; path=/; SameSite=Lax`;
@@ -446,17 +481,29 @@
                 return null;
             }
 
+            function saveSettings() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentSettings));
+                } catch(e) {}
+                setCookie(STORAGE_KEY, currentSettings);
+            }
+
             function loadSettings() {
-                const saved = getCookie('hk_salary_tracker_config');
+                let saved = null;
+                try {
+                    const localData = localStorage.getItem(STORAGE_KEY);
+                    if (localData) saved = JSON.parse(localData);
+                } catch(e) {}
+
+                if (!saved) {
+                    saved = getCookie(STORAGE_KEY);
+                }
+
                 if (saved) {
                     currentSettings = { ...DEFAULT_SETTINGS, ...saved };
                     return true;
                 }
                 return false;
-            }
-
-            function saveSettings() {
-                setCookie('hk_salary_tracker_config', currentSettings);
             }
 
             function getEffectiveSalary() {
@@ -477,7 +524,6 @@
                 }, 2200);
             }
 
-            // 初始化 MPS 下拉表單
             function initMpsSelects() {
                 const selects = [$('obMpsSelect'), $('stMpsSelect')];
                 selects.forEach(select => {
@@ -491,8 +537,7 @@
                 });
             }
 
-            // 模式切換邏輯 (UI 交互)
-            function setupModeToggle(customBtn, mpsBtn, customGroup, mpsGroup, modeSetter, getCurrentMode) {
+            function setupModeToggle(customBtn, mpsBtn, customGroup, mpsGroup, modeSetter) {
                 customBtn.addEventListener('click', () => {
                     customBtn.className = 'py-2 text-xs font-bold rounded-lg transition-all bg-amber-500 text-slate-950';
                     mpsBtn.className = 'py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-white';
@@ -509,7 +554,6 @@
                 });
             }
 
-            // 時間輔助函數
             function timeToMins(timeStr) {
                 const [h, m] = timeStr.split(':').map(Number);
                 return h * 60 + m;
@@ -522,12 +566,11 @@
                 return `${y}-${m}-${d}`;
             }
 
-            // 判斷某一天是否非工作日 (Off Day)
             function isOffDay(dateObj, wpw) {
                 const dateStr = formatDateStr(dateObj);
-                if (HK_HOLIDAYS[dateStr]) return true; // 公眾假期
+                if (HK_HOLIDAYS[dateStr]) return true;
                 
-                const day = dateObj.getDay(); // 0 = 週日, 6 = 週六
+                const day = dateObj.getDay(); // 0 = Sun, 6 = Sat
                 if (wpw === 5 && (day === 0 || day === 6)) return true;
                 if ((wpw === 5.5 || wpw === 6) && day === 0) return true;
                 return false;
@@ -539,7 +582,6 @@
                 return dateObj.getDay() === 6 && !HK_HOLIDAYS[dateStr];
             }
 
-            // 計算月度工作日總天數
             function getWorkDaysInMonth(year, month, wpw) {
                 const totalDays = new Date(year, month + 1, 0).getDate();
                 let days = 0;
@@ -555,62 +597,72 @@
             }
 
             /**
-             * 精確算法：計算跨越 2026-2027 年的長假期 (≥3 天且含有公眾假期)
+             * 精確算術邏輯：搜尋下一個「休息日/假期」以及「長假期 (≥3天)」
              */
-            function calculateLongHolidays(nowDate, wpw) {
-                const allDays = [];
-                // 掃描範圍: 2026-01-01 至 2027-12-31
-                const start = new Date(2026, 0, 1);
-                const end = new Date(2027, 11, 31);
+            function calculateHolidays(nowDate, wpw) {
+                const todayStr = formatDateStr(nowDate);
+                const start = new Date(nowDate);
+                const end = new Date(start.getFullYear() + 1, 11, 31);
 
+                const dayList = [];
                 for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
                     const ds = formatDateStr(d);
                     const off = isOffDay(d, wpw);
                     const phName = HK_HOLIDAYS[ds] || null;
-                    allDays.push({
-                        date: new Date(d),
+                    dayList.push({
                         dateStr: ds,
                         isOff: off,
-                        isPublicHoliday: !!phName,
-                        holidayName: phName
+                        isPH: !!phName,
+                        name: phName
                     });
                 }
 
-                // 組合連續 Off Days 區塊
-                const rawBlocks = [];
-                let currentBlock = [];
+                // 1. 搜尋下一個假期/休息日 (單日或長假期均可)
+                let nextOffInfo = null;
+                for (let i = 0; i < dayList.length; i++) {
+                    const item = dayList[i];
+                    if (item.isOff) {
+                        const diffTime = new Date(item.dateStr + 'T00:00:00') - new Date(todayStr + 'T00:00:00');
+                        const daysLeft = Math.ceil(diffTime / 86400000);
+                        const label = item.name ? `🎌 ${item.name}` : (new Date(item.dateStr).getDay() === 0 ? '週日休息日' : '週六/日休息日');
+                        nextOffInfo = {
+                            dateStr: item.dateStr,
+                            daysLeft: daysLeft,
+                            label: label
+                        };
+                        break;
+                    }
+                }
 
-                allDays.forEach(dayInfo => {
-                    if (dayInfo.isOff) {
-                        currentBlock.push(dayInfo);
+                // 2. 組合連續 Off Days 區塊 (計算長假期 ≥ 3 天)
+                const blocks = [];
+                let current = [];
+
+                dayList.forEach(item => {
+                    if (item.isOff) {
+                        current.push(item);
                     } else {
-                        if (currentBlock.length > 0) {
-                            rawBlocks.push(currentBlock);
-                            currentBlock = [];
+                        if (current.length > 0) {
+                            blocks.push(current);
+                            current = [];
                         }
                     }
                 });
-                if (currentBlock.length > 0) rawBlocks.push(currentBlock);
+                if (current.length > 0) blocks.push(current);
 
-                // 核心關鍵判斷：長假期需長度 >= 3 且「至少包含 1 個公眾假期」
-                const validLongHolidays = rawBlocks.filter(block => {
-                    const totalDays = block.length;
-                    const hasPH = block.some(item => item.isPublicHoliday);
-                    return totalDays >= 3 && hasPH;
-                });
+                const longBlocks = blocks.filter(b => b.length >= 3);
+                let longHolidayInfo = null;
 
-                // 尋找下一個或當前長假期
-                const todayStr = formatDateStr(nowDate);
-                for (let b of validLongHolidays) {
+                for (let b of longBlocks) {
                     const startStr = b[0].dateStr;
                     const endStr = b[b.length - 1].dateStr;
 
                     if (endStr >= todayStr) {
-                        const phNames = [...new Set(b.filter(x => x.holidayName).map(x => x.holidayName))];
-                        const nameText = phNames.length > 0 ? phNames.join('、') : '長假期';
+                        const phNames = [...new Set(b.filter(x => x.isPH).map(x => x.name))];
+                        const nameText = phNames.length > 0 ? phNames.join('、') : '連休長假期';
 
                         if (startStr <= todayStr && todayStr <= endStr) {
-                            return {
+                            longHolidayInfo = {
                                 isCurrent: true,
                                 daysLeft: 0,
                                 totalDays: b.length,
@@ -621,7 +673,7 @@
                         } else {
                             const diffTime = new Date(startStr + 'T00:00:00') - new Date(todayStr + 'T00:00:00');
                             const daysLeft = Math.ceil(diffTime / 86400000);
-                            return {
+                            longHolidayInfo = {
                                 isCurrent: false,
                                 daysLeft: daysLeft,
                                 totalDays: b.length,
@@ -630,12 +682,13 @@
                                 endDate: endStr
                             };
                         }
+                        break;
                     }
                 }
-                return null;
+
+                return { nextOff: nextOffInfo, longHoliday: longHolidayInfo };
             }
 
-            // 主渲染更新函數
             function updateDashboard() {
                 const now = new Date();
                 const year = now.getFullYear();
@@ -646,7 +699,6 @@
                 const wpw = currentSettings.workDaysPerWeek;
                 const monthlySalary = getEffectiveSalary();
 
-                // 計算工作時間
                 const workStartMin = timeToMins(currentSettings.workStart);
                 const workEndMin = timeToMins(currentSettings.workEnd);
                 const lunchStartMin = timeToMins(currentSettings.lunchStart);
@@ -655,18 +707,17 @@
                 let dailyWorkMins = workEndMin - workStartMin;
                 const lunchOverlap = Math.max(0, Math.min(workEndMin, lunchEndMin) - Math.max(workStartMin, lunchStartMin));
                 dailyWorkMins -= lunchOverlap;
-                if (dailyWorkMins <= 0) dailyWorkMins = 480; // 預設 8 小時
+                if (dailyWorkMins <= 0) dailyWorkMins = 480;
 
                 const totalMonthWorkDays = getWorkDaysInMonth(year, month, wpw);
                 const dailySalary = totalMonthWorkDays > 0 ? (monthlySalary / totalMonthWorkDays) : (monthlySalary / 22);
                 const hourlyRate = dailySalary / (dailyWorkMins / 60);
 
-                // 今日累積
                 const isTodayOff = isOffDay(now, wpw);
                 const isTodayHalf = isHalfDay(now, wpw);
 
                 let todayEarned = 0;
-                let todayStatus = 'idle'; // 'before', 'working', 'lunch', 'after', 'off'
+                let todayStatus = 'idle';
                 let todayPercent = 0;
 
                 const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds()/60;
@@ -686,7 +737,6 @@
                         todayEarned = isTodayHalf ? dailySalary * 0.5 : dailySalary;
                         todayPercent = 100;
                     } else {
-                        // 工作中或午休
                         let workedMins = nowMins - workStartMin;
                         if (!isTodayHalf && nowMins > lunchStartMin) {
                             if (nowMins >= lunchStartMin && nowMins < lunchEndMin) {
@@ -706,7 +756,7 @@
                     }
                 }
 
-                // 計算本週與本月
+                // 本月與本週計算
                 let monthAccumulatedWorkDays = 0;
                 for (let d = 1; d < dateNum; d++) {
                     const dt = new Date(year, month, d);
@@ -717,7 +767,6 @@
                 const todayTarget = isTodayOff ? 0 : (isTodayHalf ? dailySalary * 0.5 : dailySalary);
                 const monthEarned = (monthAccumulatedWorkDays * dailySalary) + todayEarned;
 
-                // 本週計算 (以週一為一週開始)
                 const monOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
                 let weekAccumulatedDays = 0;
                 let weekTotalDays = 0;
@@ -740,7 +789,7 @@
                 const weekTarget = weekTotalDays * dailySalary;
                 const weekEarned = (weekAccumulatedDays * dailySalary) + todayEarned;
 
-                // === 更新 UI DOM ===
+                // === DOM 更新 ===
                 $('todayEarned').innerHTML = `<span class="text-emerald-400">HK$ ${todayEarned.toFixed(1)}</span>`;
                 $('todaySub').textContent = `目標 HK$ ${Math.round(todayTarget).toLocaleString()}`;
                 $('todayBar').style.width = `${Math.min(100, todayPercent)}%`;
@@ -753,58 +802,70 @@
                 $('monthSub').textContent = `目標 HK$ ${Math.round(monthlySalary).toLocaleString()}`;
                 $('monthBar').style.width = `${Math.min(100, (monthEarned/monthlySalary)*100)}%`;
 
-                // 晶片數據
                 $('chipHourly').textContent = `HK$ ${hourlyRate.toFixed(1)}`;
                 $('chipDaily').textContent = `HK$ ${Math.round(dailySalary).toLocaleString()}`;
                 $('chipDays').textContent = `${totalMonthWorkDays} 天`;
 
-                // 時鐘與日期
-                const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-                const secStr = String(now.getSeconds()).padStart(2,'0');
-                $('statusClock').textContent = `${timeStr}:${secStr}`;
-                $('mainLiveClock').childNodes[0].nodeValue = `${timeStr}:`;
-                $('mainLiveSec').textContent = secStr;
+                // 時鐘與日期更新 (清理合併後的唯一 Live Clock)
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                const ss = String(now.getSeconds()).padStart(2, '0');
+                $('mainLiveClockHHMM').textContent = `${hh}:${mm}`;
+                $('mainLiveSec').textContent = `:${ss}`;
 
                 const weekText = ['日','一','二','三','四','五','六'][dayOfWeek];
                 $('mainLiveDate').textContent = `${year}年${month+1}月${dateNum}日 星期${weekText}`;
 
-                // 狀態點 & 標籤
+                // 狀態顯示
                 const dot = $('statusDot');
-                const statusTitle = $('statusTitle');
                 const statusText = $('statusText');
 
                 if (todayStatus === 'off') {
-                    dot.className = 'w-3 h-3 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.8)]';
+                    dot.className = 'w-2.5 h-2.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.8)]';
                     const ds = formatDateStr(now);
                     statusText.textContent = HK_HOLIDAYS[ds] ? `🎌 ${HK_HOLIDAYS[ds]}` : '🌴 休息日';
                 } else if (todayStatus === 'before') {
-                    dot.className = 'w-3 h-3 rounded-full bg-slate-500';
+                    dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
                     statusText.textContent = '準備上班';
                 } else if (todayStatus === 'working') {
-                    dot.className = 'w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse-dot';
+                    dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse-dot';
                     statusText.textContent = '工作中';
                 } else if (todayStatus === 'lunch') {
-                    dot.className = 'w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.8)] animate-pulse-dot';
+                    dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)] animate-pulse-dot';
                     statusText.textContent = '午休時間 🍱';
                 } else if (todayStatus === 'after') {
-                    dot.className = 'w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]';
+                    dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]';
                     statusText.textContent = '已下班 🎉';
                 }
 
-                // 下班 Alert Banner
+                // 下班提醒 Banner & 音效觸發
                 if (todayStatus === 'after' && !alertDismissed) {
                     $('alertBanner').classList.remove('hidden');
                     $('alertBanner').classList.add('flex');
+                    if (!hasPlayedSoundThisSession) {
+                        playOffWorkSound();
+                        hasPlayedSoundThisSession = true;
+                    }
                 } else {
                     $('alertBanner').classList.add('hidden');
                     $('alertBanner').classList.remove('flex');
                 }
 
-                // Header 模式文字
                 $('headerSub').textContent = currentSettings.salaryMode === 'mps' ? `Master Pay Scale Point ${currentSettings.mpsPoint}` : '自訂薪金模式';
 
-                // 計算長假期
-                const longHoliday = calculateLongHolidays(now, wpw);
+                // 計算假期與倒數
+                const { nextOff, longHoliday } = calculateHolidays(now, wpw);
+
+                // 下一個假期
+                if (nextOff) {
+                    $('nextOffDays').textContent = nextOff.daysLeft === 0 ? '今天' : `${nextOff.daysLeft} 天`;
+                    $('nextOffDetail').textContent = `${nextOff.label} (${nextOff.dateStr})`;
+                } else {
+                    $('nextOffDays').textContent = '-- 天';
+                    $('nextOffDetail').textContent = '暫無假期數據';
+                }
+
+                // 長假期
                 const cdCard = $('countdownCard');
                 if (longHoliday) {
                     if (longHoliday.isCurrent) {
@@ -815,7 +876,7 @@
                         cdCard.className = 'bg-cardBg border border-emerald-500/50 rounded-2xl p-4 flex items-center gap-4 shadow-lg';
                     } else {
                         $('cdIcon').textContent = longHoliday.daysLeft <= 7 ? '🔥' : '🏖️';
-                        $('cdTitle').textContent = '下個長假期';
+                        $('cdTitle').textContent = '下個長假期 (≥3天)';
                         $('cdDays').innerHTML = `${longHoliday.daysLeft} <span class="text-xs font-normal text-slate-400">天</span>`;
                         $('cdDetail').textContent = `${longHoliday.name} · 共 ${longHoliday.totalDays} 天 (${longHoliday.startDate} ~ ${longHoliday.endDate})`;
                         if (longHoliday.daysLeft <= 7) {
@@ -825,24 +886,19 @@
                         }
                     }
                 } else {
-                    $('cdTitle').textContent = '長假期倒數';
+                    $('cdTitle').textContent = '下個長假期 (≥3天)';
                     $('cdDays').innerHTML = `-- <span class="text-xs font-normal text-slate-400">天</span>`;
                     $('cdDetail').textContent = '暫無長假期';
                 }
             }
 
-            // 事件監聽與交互
             function bindEvents() {
                 let obTempMode = 'custom';
                 let stTempMode = 'custom';
 
-                setupModeToggle($('obModeCustom'), $('obModeMPS'), $('obCustomSalaryGroup'), $('obMpsGroup'),
-                    m => obTempMode = m, () => obTempMode);
+                setupModeToggle($('obModeCustom'), $('obModeMPS'), $('obCustomSalaryGroup'), $('obMpsGroup'), m => obTempMode = m);
+                setupModeToggle($('stModeCustom'), $('stModeMPS'), $('stCustomSalaryGroup'), $('stMpsGroup'), m => stTempMode = m);
 
-                setupModeToggle($('stModeCustom'), $('stModeMPS'), $('stCustomSalaryGroup'), $('stMpsGroup'),
-                    m => stTempMode = m, () => stTempMode);
-
-                // MPS Select 變更顯示
                 $('obMpsSelect').addEventListener('change', (e) => {
                     const pt = Number(e.target.value);
                     $('obMpsDisplay').textContent = `點數月薪: HK$ ${MPS_TABLE[pt].toLocaleString()}`;
@@ -852,7 +908,16 @@
                     $('stMpsDisplay').textContent = `點數月薪: HK$ ${MPS_TABLE[pt].toLocaleString()}`;
                 });
 
-                // 首次使用 Save
+                // 音效開關按鈕
+                const soundBtn = $('btnToggleSound');
+                soundBtn.addEventListener('click', () => {
+                    currentSettings.soundEnabled = !currentSettings.soundEnabled;
+                    soundBtn.textContent = currentSettings.soundEnabled ? '🔔' : '🔕';
+                    showToast(currentSettings.soundEnabled ? '🔔 下班提示音效已開啟' : '🔕 提示音效已靜音');
+                    saveSettings();
+                });
+
+                // 首次開啟儲存
                 $('btnObSave').addEventListener('click', () => {
                     currentSettings.salaryMode = obTempMode;
                     currentSettings.customSalary = Math.max(1000, Number($('obSalaryInput').value) || 25000);
@@ -865,7 +930,7 @@
 
                     saveSettings();
                     $('onboardingOverlay').classList.add('opacity-0', 'pointer-events-none');
-                    showToast('✅ 設定已完成，開始實時追蹤');
+                    showToast('✅ 設定已備份，開始實時追蹤');
                     updateDashboard();
                 });
 
@@ -905,7 +970,6 @@
                     if (e.target === overlay) closeSettings();
                 });
 
-                // 儲存設定
                 $('btnSaveSettings').addEventListener('click', () => {
                     currentSettings.salaryMode = stTempMode;
                     currentSettings.customSalary = Math.max(1000, Number($('stSalaryInput').value) || 25000);
@@ -918,8 +982,9 @@
 
                     saveSettings();
                     alertDismissed = false;
+                    hasPlayedSoundThisSession = false;
                     closeSettings();
-                    showToast('💾 設定已更新');
+                    showToast('💾 設定已同步至雙重儲存');
                     updateDashboard();
                 });
 
@@ -929,7 +994,6 @@
                 });
             }
 
-            // 初始化啟動
             function init() {
                 initMpsSelects();
                 bindEvents();
@@ -940,6 +1004,8 @@
                 } else {
                     $('onboardingOverlay').classList.add('opacity-0', 'pointer-events-none');
                 }
+
+                $('btnToggleSound').textContent = currentSettings.soundEnabled ? '🔔' : '🔕';
 
                 updateDashboard();
                 setInterval(updateDashboard, 1000);
